@@ -9,24 +9,57 @@ on:
       - develop
 
 jobs:
-  checkout-code:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Install dependencies
+        run: npm install
+
+  build-application:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2 
+
+      - name: Install dependencies
+        run: npm install 
+
+      - name: Build application
+        run: npm run build
+
+  run-dependabot:
+    needs: build-application
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-  install-dependencies:
-    needs: checkout-code
+      - name: Run Dependabot
+        uses: dependabot/dependabot-core@v2
+        with:
+          directory: "/"
+          package-ecosystem: "npm"
+          schedule-interval: "daily"
+
+  check-packages:
+    needs: run-dependabot
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Install dependencies
-        run: npm new
+        run: npm install
+
+      - name: Check packages
+        run: npm audit
 
   run-tests:
-    needs: checkout-code
+    needs: check-packages
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -55,4 +88,11 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: test-results
-          path: incorrect-path/test-results
+          path: path/to/test-results
+
+  final-confirmation:
+    needs: upload-test-results
+    runs-on: ubuntu-latest
+    steps:
+      - name: Final confirmation
+        run: echo "All steps completed successfully"
